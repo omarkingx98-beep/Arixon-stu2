@@ -1,0 +1,265 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Student profile holding authentication details, display preferences, and academic points.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth user ID" },
+        "username": { "type": "string", "description": "Unique username" },
+        "displayName": { "type": "string", "description": "Full student name" },
+        "email": { "type": "string", "description": "Student email address" },
+        "photoURL": { "type": "string", "description": "Avatar URL or preset path" },
+        "age": { "type": "number", "description": "Student age" },
+        "city": { "type": "string", "description": "City of residence" },
+        "gender": { "type": "string", "enum": ["male", "female", "other", "prefer_not_to_say"] },
+        "whatsappGroup": { "type": "string", "description": "Official study WhatsApp group" },
+        "totalPoints": { "type": "number", "description": "Accumulated points from exams" },
+        "weeklyPoints": { "type": "number", "description": "Weekly leaderboard score" },
+        "monthlyPoints": { "type": "number", "description": "Monthly leaderboard score" },
+        "examsCompleted": { "type": "number", "description": "Total finished exams count" },
+        "correctAnswers": { "type": "number", "description": "Total correct answers submitted" },
+        "wrongAnswers": { "type": "number", "description": "Total incorrect answers submitted" },
+        "hasSeenTutorial": { "type": "boolean", "description": "Whether tutorial modal was seen" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "lastActiveAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "username", "displayName", "email", "totalPoints", "examsCompleted"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "Curated Tawjihi academic exam.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "description": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "passingScore": { "type": "number" },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "isPublished": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "subject", "durationMinutes", "totalQuestions", "isPublished"]
+    },
+    "Question": {
+      "title": "Exam Question",
+      "description": "Individual multiple-choice question in the exam.",
+      "type": "object",
+      "properties": {
+        "questionText": { "type": "string" },
+        "options": { "type": "string" },
+        "points": { "type": "number" },
+        "difficulty": { "type": "string" }
+      },
+      "required": ["questionText", "points"]
+    },
+    "ExamAttempt": {
+      "title": "Exam Attempt",
+      "description": "Record of a student taking an exam.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "examId": { "type": "string" },
+        "status": { "type": "string", "enum": ["in_progress", "completed", "abandoned"] },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "correctCount": { "type": "number" },
+        "incorrectCount": { "type": "number" },
+        "pointsEarned": { "type": "number" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "examId", "status", "startedAt"]
+    },
+    "AdminProfile": {
+      "title": "Admin Profile",
+      "description": "Administrator account metadata and role assignment.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["super_admin", "admin", "editor"] },
+        "lastLoginAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "AdminAuditLog": {
+      "title": "Admin Audit Log",
+      "description": "Immutable security and moderation log.",
+      "type": "object",
+      "properties": {
+        "adminUid": { "type": "string" },
+        "adminEmail": { "type": "string" },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["adminUid", "action", "timestamp"]
+    },
+    "StoreProduct": {
+      "title": "Store Product",
+      "description": "Educational product available for purchase in Arixon Store (digital, physical, or bundle).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nameAr": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "type": { "type": "string", "enum": ["digital", "physical", "bundle", "subscription"] },
+        "stock": { "type": "number" },
+        "isPublished": { "type": "boolean" },
+        "coverImage": { "type": "string" }
+      },
+      "required": ["nameAr", "price", "type", "isPublished"]
+    },
+    "StoreOrder": {
+      "title": "Store Order",
+      "description": "Customer purchase order for educational resources.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "userId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "failed", "refunded"] },
+        "orderStatus": { "type": "string", "enum": ["pending", "processing", "ready", "shipped", "delivered", "cancelled", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderNumber", "userId", "customerName", "total", "paymentMethod", "paymentStatus", "orderStatus"]
+    },
+    "DigitalLibraryItem": {
+      "title": "Digital Library Item",
+      "description": "Unlocked digital material belonging to a student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "orderId": { "type": "string" },
+        "grantedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "productId", "orderId", "grantedAt"]
+    },
+    "Friendship": {
+      "title": "Friendship",
+      "description": "Student friendship connection and request status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user1Id": { "type": "string" },
+        "user2Id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "declined"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user1Id", "user2Id", "senderId", "receiverId", "status", "createdAt"]
+    },
+    "UserBlock": {
+      "title": "User Block",
+      "description": "Blocking record preventing unwanted communication.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "blockerId": { "type": "string" },
+        "blockedId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["blockerId", "blockedId", "createdAt"]
+    },
+    "ChatConversation": {
+      "title": "Chat Conversation",
+      "description": "Direct 1-on-1 messaging thread between two users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "participants": { "type": "string" },
+        "lastMessageText": { "type": "string" },
+        "lastMessageSenderId": { "type": "string" },
+        "lastMessageTimestamp": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "lastMessageTimestamp", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "Individual chat message in a conversation.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "conversationId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPhotoURL": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["conversationId", "senderId", "senderName", "text", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Public user profiles and student performance tallies."
+    },
+    "/friendships/{friendshipId}": {
+      "schema": { "$ref": "#/entities/Friendship" },
+      "description": "Student friendship requests and active friendships."
+    },
+    "/blocks/{blockId}": {
+      "schema": { "$ref": "#/entities/UserBlock" },
+      "description": "User block records for safety."
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/ChatConversation" },
+      "description": "Direct messaging threads."
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Messages within a conversation."
+    },
+    "/exams/{examId}": {
+      "schema": { "$ref": "#/entities/Exam" },
+      "description": "Published and draft exams for students."
+    },
+    "/exams/{examId}/questions/{questionId}": {
+      "schema": { "$ref": "#/entities/Question" },
+      "description": "Questions belonging to a specific exam."
+    },
+    "/attempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/ExamAttempt" },
+      "description": "Student exam attempts and results."
+    },
+    "/adminProfiles/{adminUid}": {
+      "schema": { "$ref": "#/entities/AdminProfile" },
+      "description": "Super admin and staff profiles."
+    },
+    "/adminAuditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AdminAuditLog" },
+      "description": "Audit trail of all administrative actions."
+    },
+    "/storeProducts/{productId}": {
+      "schema": { "$ref": "#/entities/StoreProduct" },
+      "description": "Arixon store catalog items."
+    },
+    "/storeOrders/{orderId}": {
+      "schema": { "$ref": "#/entities/StoreOrder" },
+      "description": "Customer purchase orders."
+    },
+    "/digitalLibraries/{libId}": {
+      "schema": { "$ref": "#/entities/DigitalLibraryItem" },
+      "description": "Student unlocked digital educational resources."
+    }
+  }
+}

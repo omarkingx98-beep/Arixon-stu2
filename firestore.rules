@@ -1,0 +1,329 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isSiteOwner() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'owner' ||
+        (request.auth.token.email != null && request.auth.token.email == 'omarkingx99@gmail.com')
+      );
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.role in ['owner', 'super_admin', 'admin'] ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'omarkingx98@gmail.com' ||
+          request.auth.token.email == 'omarkingx99@gmail.com' ||
+          request.auth.token.email.matches('(?i)^(omarkingx98|omarkingx99)@gmail\\.com$')
+        )) ||
+        exists(/databases/$(database)/documents/adminProfiles/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['owner', 'super_admin', 'admin'])
+      );
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Roles & Permissions (Owner & Admin management)
+    match /roles/{roleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Admin Profiles
+    match /adminProfiles/{adminUid} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Admin Audit Logs (Append-Only)
+    match /adminAuditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Point Transactions & History
+    match /pointTransactions/{txId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if false;
+    }
+
+    match /pointAdjustments/{adjId} {
+      allow read: if isAuthenticated() || isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Central Question Bank
+    match /questions/{questionId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Global Settings
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Announcements
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Challenges
+    match /challenges/{challengeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Notifications (In-app notifications)
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Friendships & Friend Requests
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated() && (
+        resource.data.user1Id == request.auth.uid ||
+        resource.data.user2Id == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.user1Id == request.auth.uid ||
+        request.resource.data.senderId == request.auth.uid ||
+        isAdmin()
+      );
+      allow update, delete: if isAuthenticated() && (
+        resource.data.user1Id == request.auth.uid ||
+        resource.data.user2Id == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // Private 1-on-1 Chat Conversations
+    match /conversations/{conversationId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid in resource.data.participants ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
+      allow update: if isAuthenticated() && (
+        request.auth.uid in resource.data.participants ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+
+      // Messages in conversation
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants ||
+          isAdmin()
+        );
+        allow create: if isAuthenticated() && (
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+          request.resource.data.senderId == request.auth.uid
+        );
+        allow update, delete: if isAuthenticated() && (
+          resource.data.senderId == request.auth.uid ||
+          isAdmin()
+        );
+      }
+    }
+
+    // User Blocks & Safety
+    match /blocks/{blockId} {
+      allow read: if isAuthenticated() && (
+        resource.data.blockerId == request.auth.uid ||
+        resource.data.blockedId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && request.resource.data.blockerId == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource.data.blockerId == request.auth.uid || isAdmin());
+    }
+
+    // User Reports & Moderation
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.reporterId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Exams
+    match /exams/{examId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+
+      // Public question data
+      match /questions/{questionId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isAdmin();
+      }
+
+      // Protected answer keys
+      match /answerKeys/{questionId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    // AI Generation Jobs
+    match /aiGenerationJobs/{jobId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Exam Templates
+    match /examTemplates/{templateId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Exam attempts
+    match /attempts/{attemptId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid && resource.data.status == 'in_progress') ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+
+      match /answers/{questionId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/attempts/$(attemptId)).data.userId == request.auth.uid ||
+          isAdmin()
+        );
+        allow create, update: if isAuthenticated() && (
+          (get(/databases/$(database)/documents/attempts/$(attemptId)).data.userId == request.auth.uid &&
+           get(/databases/$(database)/documents/attempts/$(attemptId)).data.status == 'in_progress') ||
+          isAdmin()
+        );
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ==========================================
+    // Arixon Store Rules
+    // ==========================================
+
+    // Products catalog
+    match /storeProducts/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Store Categories
+    match /storeCategories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Customer Orders
+    match /storeOrders/{orderId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (
+        isAuthenticated() && 
+        resource.data.userId == request.auth.uid && 
+        request.resource.data.userId == request.auth.uid &&
+        resource.data.paymentStatus == 'pending'
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Student Digital Library (Unlocked PDFs & Packs)
+    match /digitalLibraries/{libId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Discount Coupons
+    match /storeCoupons/{couponId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Product Ratings & Customer Reviews
+    match /storeReviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // User Wishlists
+    match /storeWishlists/{userId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Global Store Settings & Payment Instructions
+    match /storeSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Promotional Store Banners & Sliders
+    match /storeBanners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // Phase 5: Economy, Cosmetics & Inventory Rules
+    // ==========================================
+
+    // Store Items (Cosmetics & Consumables catalog)
+    match /storeItems/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Student Inventory
+    match /userInventory/{invId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && (
+        (request.resource.data.userId == request.auth.uid) || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Store Transactions Ledger (Append-Only)
+    match /storeTransactions/{txId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && (
+        (request.resource.data.userId == request.auth.uid) || isAdmin()
+      );
+      allow update, delete: if false; // Immutable ledger
+    }
+
+    // Economy Global Settings
+    match /economySettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // User Cosmetics Loadout
+    match /userCosmetics/{userId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+  }
+}

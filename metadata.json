@@ -1,0 +1,6 @@
+{
+  "name": "Arixon",
+  "description": "منصة الامتحانات والمسابقات التعليمية التنافسية ومتجر Arixon لطلبة التوجيهي 2009",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

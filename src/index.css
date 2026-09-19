@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  :root.dark {
+    color-scheme: dark;
+  }
+  html {
+    font-family: 'Cairo', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+  body {
+    min-height: 100vh;
+    background-color: #ffffff;
+    color: #0f172a;
+  }
+  html.dark body {
+    background-color: #090d16;
+    color: #f8fafc;
+  }
+}
